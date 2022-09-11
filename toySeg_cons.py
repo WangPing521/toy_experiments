@@ -10,7 +10,6 @@ from loss_functions.crossentropy import SimplexCrossEntropyLoss
 from tool.independent_functions import fix_all_seed, class2one_hot, simplex, average_list, plot_joint_matrix
 from tqdm import tqdm
 
-device = 'cuda'
 config = ConfigManger("config/config_toyseg.yaml").config
 fix_all_seed(config['seed'])
 dir = f'symetry_run/{config["save_dir"]}'
@@ -20,6 +19,8 @@ config0 = config.copy()
 config0.pop("Config", None)
 write_yaml(config0, save_dir=dir, save_name="config.yaml")
 set_environment(config.get("Environment"))
+device = config['device']
+
 
 net1 = Enet(input_dim=1, num_classes=config['num_classes'])
 optim1 = torch.optim.Adam(net1.parameters(), config['lr'])
@@ -59,7 +60,7 @@ if __name__ == '__main__':
                 lab_data[2]
             )
 
-            onehot_target = class2one_hot(lab_target.squeeze(1).to('cpu'), C=2).to(device)
+            onehot_target = class2one_hot(lab_target.squeeze(1), C=2).to(device)
 
             unlab_img, unlab_target, unlab_filename = (
                 unlab_data[0].to(device),
@@ -74,7 +75,7 @@ if __name__ == '__main__':
             with torch.no_grad():
                 unlab_pred = torch.softmax(net1(unlab_img), dim=1)
             assert simplex(unlab_pred)
-            if cur_epoch > 15:
+            if cur_epoch >config['weight_epoch']:
                 all_shapes_list, shape_error_list, lds, cons = vatloss(net1, unlab_img)
 
                 #todo:visulization
