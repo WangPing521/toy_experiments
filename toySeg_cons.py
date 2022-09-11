@@ -59,7 +59,7 @@ if __name__ == '__main__':
                 lab_data[2]
             )
 
-            onehot_target = class2one_hot(lab_target.squeeze(1), C=2)
+            onehot_target = class2one_hot(lab_target.squeeze(1).to('cpu'), C=2).to(device)
 
             unlab_img, unlab_target, unlab_filename = (
                 unlab_data[0].to(device),
