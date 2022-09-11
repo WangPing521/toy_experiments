@@ -6,7 +6,7 @@ from torch import Tensor
 import cv2
 import numpy as np
 
-device = 'cuda'
+device = 'cpu'
 def local_cons_binary_convex(sample_list, scale):
     kernel = torch.ones(1, 1, 3, 3)
     kernel = torch.FloatTensor(kernel)
@@ -116,12 +116,12 @@ def symetry_reward(sample_list, reward_type='hard'): # len(sample_list) = 4
             for center_position_unk in center_line:
                 for x,y in zip(left_fgX, left_fgY):
                     yy = int(2 * center_position_unk - y)
-                    yy = min(yy, max_index)
+                    yy = min(yy, 255)
                     reward_tmp_map[x][yy] = 1
 
                 for x,y in zip(right_fgX, right_fgY):
                     yy = int(2 * center_position_unk - y)
-                    yy = max(yy, min_index)
+                    yy = max(yy, 0)
                     reward_tmp_map[x][yy] = 1
 
                 reward_tmp = reward_tmp_map + samples_img[i].squeeze(0)

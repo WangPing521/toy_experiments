@@ -2,6 +2,21 @@ import os
 from torch.utils.data import Dataset
 from torchvision.io import read_image
 
+
+class DataloaderIter:
+    def __init__(self, dataloader) ->None:
+        self._dataloader = dataloader
+        self._dataloader_iter = iter(dataloader)
+    def __iter__(self):
+        return self
+    def __next__(self):
+        try:
+            return self._dataloader_iter.__next__()
+        except:
+            self._dataloader_iter = iter(self._dataloader)
+            return self._dataloader_iter.__next__()
+
+
 class SymetryData(Dataset):
     def __init__(self, img_dir, transform=None, target_transform=None, ratio=0.1, indicator='val'):
         self.img_dir = img_dir

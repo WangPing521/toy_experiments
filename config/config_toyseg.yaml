@@ -1,6 +1,8 @@
 num_classes: 2
 lr: 0.005
-seed: 123
+ratio: 0.3
+save_dir: 0911
+weight_epoch: 15
 
 weights:
   cons_weight: 0.5
@@ -8,3 +10,5 @@ weights:
   weight_cons: 0.05
 
 train_mode: vat # vat, cons, cat
+
+seed: 123
