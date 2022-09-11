@@ -1,8 +1,9 @@
 import os
 from torch.utils.data import Dataset
-from torchvision.io import read_image
+from torchvision import transforms
+from PIL import Image
 
-
+trans = transforms.ToTensor()
 class DataloaderIter:
     def __init__(self, dataloader) ->None:
         self._dataloader = dataloader
@@ -44,16 +45,22 @@ class SymetryData(Dataset):
         gt_path = os.path.join(self.img_dir, 'gt')
 
         if self.indicator in ['val']:
-            image = read_image(os.path.join(img_path, self.data_container[idx]))
-            label = read_image(os.path.join(gt_path, self.data_container[idx]))
+            image = Image.open(os.path.join(img_path, self.data_container[idx]))
+            label = Image.open(os.path.join(gt_path, self.data_container[idx]))
+            image = trans(image)
+            label = trans(label)
             filename = self.data_container[idx]
         elif self.indicator in ['lab_train']:
-            image = read_image(os.path.join(img_path, self.lab_container[idx]))
-            label = read_image(os.path.join(gt_path, self.lab_container[idx]))
+            image = Image.open(os.path.join(img_path, self.lab_container[idx]))
+            label = Image.open(os.path.join(gt_path, self.lab_container[idx]))
+            image = trans(image)
+            label = trans(label)
             filename = self.lab_container[idx]
         elif self.indicator in ['unlab_train']:
-            image = read_image(os.path.join(img_path, self.unlab_container[idx]))
-            label = read_image(os.path.join(gt_path, self.unlab_container[idx]))
+            image = Image.open(os.path.join(img_path, self.unlab_container[idx]))
+            label = Image.open(os.path.join(gt_path, self.unlab_container[idx]))
+            image = trans(image)
+            label = trans(label)
             filename = self.unlab_container[idx]
 
         if self.transform:
