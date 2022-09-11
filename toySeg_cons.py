@@ -10,7 +10,7 @@ from loss_functions.crossentropy import SimplexCrossEntropyLoss
 from tool.independent_functions import fix_all_seed, class2one_hot, simplex, average_list, plot_joint_matrix
 from tqdm import tqdm
 
-device = 'cpu'
+device = 'cuda'
 config = ConfigManger("config/config_toyseg.yaml").config
 fix_all_seed(config['seed'])
 dir = f'symetry_run/{config["save_dir"]}'

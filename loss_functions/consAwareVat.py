@@ -9,7 +9,7 @@ from torch.distributions import Bernoulli
 from loss_functions.constraint_loss import local_cons_binary_convex, symetry_reward
 from tool.independent_functions import average_list
 
-device = 'cpu'
+device = 'cuda'
 class KL_div(nn.Module):
     r"""
     KL(p,q)= -\sum p(x) * log(q(x)/p(x))

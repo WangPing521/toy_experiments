@@ -6,7 +6,7 @@ from torch import Tensor
 import cv2
 import numpy as np
 
-device = 'cpu'
+device = 'cuda'
 def local_cons_binary_convex(sample_list, scale):
     kernel = torch.ones(1, 1, 3, 3)
     kernel = torch.FloatTensor(kernel)
