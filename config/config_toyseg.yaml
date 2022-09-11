@@ -12,3 +12,4 @@ weights:
 train_mode: vat # vat, cons, cat
 
 seed: 123
+device: cuda
