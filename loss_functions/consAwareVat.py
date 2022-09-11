@@ -95,7 +95,7 @@ class Local_cons(nn.Module):
 
         if cons_name in ['symetry']:
             all_shapes_list, symmetry_errors_list = symetry_reward(sample_list_trans)
-            reward_list = [torch.where(error==torch.Tensor([0]), torch.tensor([-1]).to(device), error) for error in symmetry_errors_list]
+            reward_list = [torch.where(error==torch.Tensor([0]).to(device), torch.tensor([-1]).to(device), error) for error in symmetry_errors_list]
         else:
             reward_list = local_cons_binary_convex(sample_list_trans, scale=3)
 
