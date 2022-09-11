@@ -231,7 +231,7 @@ class Enet(nn.Module):
         return output
 
 
-input = Variable(torch.rand(4, 3, 256, 256))
-enet = Enet(num_classes=4)
-with SummaryWriter(comment='enet') as w:
-    w.add_graph(enet, (input,))
+# input = Variable(torch.rand(4, 3, 256, 256))
+# enet = Enet(num_classes=4)
+# with SummaryWriter(comment='enet') as w:
+#     w.add_graph(enet, (input,))
