@@ -49,7 +49,7 @@ if __name__ == '__main__':
             weight2 = config['weights']['weight_cons']
 
         suplosslist, ldslist, conslist = [], [], []
-        batch_indicator = tqdm(range(200))
+        batch_indicator = tqdm(range(100))
         batch_indicator.set_description(f"Training Epoch {cur_epoch:03d}")
         for batch_id, lab_data, unlab_data in zip(batch_indicator, lab_dataloader, unlab_dataloader):
             lds, cons = 0, 0
