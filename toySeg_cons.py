@@ -153,7 +153,7 @@ if __name__ == '__main__':
             dice, error= symmetry_error(pred_val.max(1)[1], val_target.squeeze(1))
             val_dsc.append(dice)
             symmetry_errorlist.append(error)
-            if cur_epoch == 0:
+            if cur_epoch == 99:
                 save_toyseg(pred_val.max(1)[1], names=val_filename, root=dir, mode='predictions')
 
         dsc = average_list(val_dsc)
