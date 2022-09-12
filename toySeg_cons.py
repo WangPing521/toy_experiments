@@ -11,7 +11,7 @@ from loss_functions.crossentropy import SimplexCrossEntropyLoss
 from tool.independent_functions import fix_all_seed, class2one_hot, simplex, average_list, plot_joint_matrix
 from tqdm import tqdm
 
-from tool.save_images import save_images
+from tool.save_images import save_toyseg
 
 config = ConfigManger("config/config_toyseg.yaml").config
 fix_all_seed(config['seed'])
@@ -153,13 +153,15 @@ if __name__ == '__main__':
             dice, error= symmetry_error(pred_val.max(1)[1], val_target.squeeze(1))
             val_dsc.append(dice)
             symmetry_errorlist.append(error)
+            if cur_epoch == 0:
+                save_toyseg(pred_val.max(1)[1], names=val_filename, root=dir, mode='predictions')
+
         dsc = average_list(val_dsc)
         symmetry_erroravg = average_list(symmetry_errorlist)
         writer.add_scalar('val/dice1', dsc[1], cur_epoch)
         writer.add_scalar('val/error', symmetry_erroravg, cur_epoch)
 
-        if cur_epoch == 99:
-            save_images(pred_val.max(1)[1], names=val_filename, root=dir, mode='predictions')
+
 
 
 
