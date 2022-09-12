@@ -79,58 +79,31 @@ def ContourEstimator(x:Tensor):
 
 
 def symetry_reward(sample_list, reward_type='hard'): # len(sample_list) = 4
-    symmetry_errors_list, all_shapes_list = [], []
+    symmetry_errors_list, all_shapes_list, fg_contour_list = [], [], []
 
     for samples_img in sample_list: # samples_img: [3,1,256,256]
         fg_contour = ContourEstimator(samples_img)
         #todo: estimate symetry
         contour_index = torch.where(fg_contour==1)
-        fg_index = torch.where(samples_img.squeeze(1)==1)
         num_samples = samples_img.shape[0]
+
         for i in range(num_samples):
-            reward_tmp_map = torch.zeros_like(samples_img[i].squeeze(0))
+            all_shape_tmp = torch.ones_like(fg_contour[i]) * fg_contour[i]
             sample_contouridx = torch.where(contour_index[0]==i)
-            sample_fgidx = torch.where(fg_index[0]==i)
+            center_position = torch.floor(contour_index[2][sample_contouridx].float().mean()) # center
 
-            X = contour_index[1][sample_contouridx]
-            Y = contour_index[2][sample_contouridx]
-            min_index, max_index = min(Y), max(Y)
-            center_position = torch.floor(0.5 * (min_index + max_index)) # center
-
-            fg_X = fg_index[1][sample_fgidx]
-            fg_Y = fg_index[2][sample_fgidx]
-
-            # symmetry
-            fg_left_index = torch.where(fg_Y<center_position)
-            fg_right_index = torch.where(fg_Y>center_position)
-
-            left_fgX = fg_X[fg_left_index]
-            left_fgY = fg_Y[fg_left_index]
-            right_fgX = fg_X[fg_right_index]
-            right_fgY = fg_Y[fg_right_index]
-
-
-            center_line = [center_position-10, center_position-5, center_position-3, center_position, center_position+3, center_position+5, center_position+10]
+            # center_line = [center_position-10, center_position-5, center_position-3, center_position, center_position+3, center_position+5, center_position+10]
+            center_line = [center_position]
             tmp = 65536
             all_shape = torch.zeros_like(samples_img[i].squeeze(0))
             symmetry_error = torch.zeros_like(samples_img[i].squeeze(0))
 
             for center_position_unk in center_line:
-                for x,y in zip(left_fgX, left_fgY):
-                    yy = int(2 * center_position_unk - y)
-                    yy = min(yy, 255)
-                    reward_tmp_map[x][yy] = 1
+                yy = 2 * center_position_unk - contour_index[2][min(sample_contouridx[0]):max(sample_contouridx[0])+1]
+                yy = torch.where(yy > 255, torch.Tensor([255.]), yy)
 
-                for x,y in zip(right_fgX, right_fgY):
-                    yy = int(2 * center_position_unk - y)
-                    yy = max(yy, 0)
-                    reward_tmp_map[x][yy] = 1
-
-                reward_tmp = reward_tmp_map + samples_img[i].squeeze(0)
-
-                all_shape_tmp = torch.where(reward_tmp>0, torch.Tensor([1]).to(device), reward_tmp)
-                symmetry_error_tmp = all_shape_tmp - samples_img[i].squeeze(0)
-
+                all_shape_tmp[contour_index[1][sample_contouridx], yy.long()] = 1
+                symmetry_error_tmp = all_shape_tmp - fg_contour[i]
                 select_center = symmetry_error_tmp.sum()
 
                 if select_center < tmp:
@@ -146,63 +119,39 @@ def symetry_reward(sample_list, reward_type='hard'): # len(sample_list) = 4
                 symmetry_errors = torch.cat([symmetry_errors, symmetry_error.unsqueeze(0)], dim=0)
         all_shapes_list.append(all_shapes)
         symmetry_errors_list.append(symmetry_errors)
-    return all_shapes_list, symmetry_errors_list
+        fg_contour_list.append(fg_contour)
+    return all_shapes_list, symmetry_errors_list, fg_contour_list
 
 def symmetry_error(pred, label):
     assert pred.shape == label.shape
     batch_num = pred.shape[0]
     fg_contour = ContourEstimator(pred)
     contour_index = torch.where(fg_contour == 1)
-    fg_index = torch.where(pred.squeeze(1) == 1)
     error_list, dsc_list= [], []
     for i in range(batch_num):
-       reward_tmp_map = torch.zeros_like(pred[i].squeeze(0))
-       sample_contouridx = torch.where(contour_index[0]==i)
-       sample_fgidx = torch.where(fg_index[0]==i)
+        all_shape = torch.ones_like(fg_contour[i]) * fg_contour[i]
+        sample_contouridx = torch.where(contour_index[0] == i)
+        center_position = torch.floor(contour_index[2][sample_contouridx].float().mean())  # center
 
-       X = contour_index[1][sample_contouridx]
-       Y = contour_index[2][sample_contouridx]
-       min_index, max_index = min(Y), max(Y)
-       center_position = torch.floor(0.5 * (min_index + max_index)) # center
+        yy = 2 * center_position - contour_index[2][min(sample_contouridx[0]):max(sample_contouridx[0]) + 1]
+        yy = torch.where(yy > 255, torch.Tensor([255.]), yy)
+        all_shape[contour_index[1][sample_contouridx], yy.long()] = 1
+        symmetry_error_tmp = all_shape - fg_contour[i]
+        symmetry_error = symmetry_error_tmp.sum()
 
-       fg_X = fg_index[1][sample_fgidx]
-       fg_Y = fg_index[2][sample_fgidx]
+        error = symmetry_error / all_shape.sum()
+        error_list.append(error)
 
-       # symmetry
-       fg_left_index = torch.where(fg_Y<center_position)
-       fg_right_index = torch.where(fg_Y>center_position)
+        onehot_pred = class2one_hot(pred.squeeze(1).cpu(), C=2).to(device).to(device)
+        onehot_target = class2one_hot(label.squeeze(1).cpu(), C=2).to(device).to(device)
 
-       left_fgX = fg_X[fg_left_index]
-       left_fgY = fg_Y[fg_left_index]
-       right_fgX = fg_X[fg_right_index]
-       right_fgY = fg_Y[fg_right_index]
+        interaction, union = (
+            dscintersaction(onehot_pred, onehot_target),
+            dscunion(onehot_pred, onehot_target),
+        )
+        dice = (2 * interaction.sum(0) + 1e-6) / (union.sum(0) + 1e-6)
+        dsc_list.append(dice)
 
-       for x,y in zip(left_fgX, left_fgY):
-           yy = int(2 * center_position - y)
-           yy = min(yy, 255)
-           reward_tmp_map[x][yy] = 1
-
-       for x,y in zip(right_fgX, right_fgY):
-           yy = int(2 * center_position - y)
-           yy = max(yy, 0)
-           reward_tmp_map[x][yy] = 1
-
-       all_shape = reward_tmp_map + pred[i]
-
-       all_shape = torch.where(all_shape>torch.Tensor([0.0]).to(device), torch.Tensor([1.0]).to(device), all_shape.float())
-       symmetry_error = all_shape - pred[i]
-       error = symmetry_error.sum() / all_shape.sum()
-       error_list.append(error)
-
-       onehot_pred = class2one_hot(pred.squeeze(1).cpu(), C=2).to(device).to(device)
-       onehot_target = class2one_hot(label.squeeze(1).cpu(), C=2).to(device).to(device)
-
-       interaction, union = (
-           dscintersaction(onehot_pred, onehot_target),
-           dscunion(onehot_pred, onehot_target),
-       )
-       dice = (2 * interaction.sum(0) + 1e-6) / (union.sum(0) + 1e-6)
-       dsc_list.append(dice)
     symmetry_error = average_list(error_list)
     dice = average_list(dsc_list)
 

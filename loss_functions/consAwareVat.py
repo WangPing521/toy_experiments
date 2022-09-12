@@ -94,8 +94,8 @@ class Local_cons(nn.Module):
             prob_list_trans.append(prob_imgs.transpose(1, 0))
 
         if cons_name in ['symetry']:
-            all_shapes_list, symmetry_errors_list = symetry_reward(sample_list_trans)
-            reward_list = [torch.where(error==torch.Tensor([int(0)]).to(device), torch.tensor([-1]).to(device), error) for error in symmetry_errors_list]
+            all_shapes_list, symmetry_errors_list, fg_contour_list = symetry_reward(sample_list_trans)
+            reward_list = [- fg + error for error,fg in zip(symmetry_errors_list, fg_contour_list)]
         else:
             reward_list = local_cons_binary_convex(sample_list_trans, scale=3)
 
@@ -173,8 +173,9 @@ class consVATLoss(nn.Module):
                 d.requires_grad_()
                 pred_hat = torch.softmax(model(x + self.xi * d), dim=1)
                 adv_distance = self.distance_func(pred_hat, pred)
-                all_shapes_list, shape_error_list, adv_cons = self.local_constriant(pred_hat)
-                adv_distance = adv_distance + self.consweight * adv_cons
+                if self.mode in ['cat']:
+                    all_shapes_list, shape_error_list, adv_cons = self.local_constriant(pred_hat)
+                    adv_distance = adv_distance + self.consweight * adv_cons
                 adv_distance.backward()
                 d = _l2_normalize(d.grad)
 
@@ -191,11 +192,7 @@ class consVATLoss(nn.Module):
                     f"eps should be tensor or float, given {self.eps}."
                 )
 
-            if self.mode in ['cons']:
-                lds = 0
-                pred_hat = torch.softmax(model(x), dim=1)
-                all_shapes_list, shape_error_list, cons = self.local_constriant(pred_hat)
-            elif self.mode in ['vat']:
+            if self.mode in ['vat']:
                 cons = 0
                 pred_hat = torch.softmax(model(x + r_adv), dim=1)
                 lds = self.distance_func(pred_hat, pred)
@@ -204,6 +201,6 @@ class consVATLoss(nn.Module):
                 lds = self.distance_func(pred_hat, pred)
                 all_shapes_list, shape_error_list, cons = self.local_constriant(pred_hat)
 
-        return all_shapes_list, shape_error_list, lds, cons
+        return all_shapes_list, shape_error_list, lds, cons, pred
 
 

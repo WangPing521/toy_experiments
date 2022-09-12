@@ -1,8 +1,0 @@
-lr: 0.005
-num_classes: 2
-seed: 123
-train_mode: vat
-weights:
-  cons_weight: 0.5
-  weight_adv: 0.001
-  weight_cons: 0.05

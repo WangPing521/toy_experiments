@@ -1,7 +1,11 @@
+device: cpu
 lr: 0.005
 num_classes: 2
+ratio: 0.3
+save_dir: save_0912
 seed: 123
-train_mode: vat
+train_mode: cons_unlab
+weight_epoch: 0
 weights:
   cons_weight: 0.5
   weight_adv: 0.001
