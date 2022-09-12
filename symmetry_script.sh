@@ -6,15 +6,16 @@ CC_WRAPPER_PATH="CC_wrapper.sh"
 
 source $CC_WRAPPER_PATH
 
-time=2
+time=3
 account=def-chdesa
-save_dir=save_0912
+save_dir=save_0912_1
 declare -a StringArray=(
 
 #upper_baseline
-"python -O toySeg_cons.py seed=123 lr=0.000001 weight_epoch=100 ratio=0.9 save_dir=${save_dir}/symmetry_upper501lr"
-"python -O toySeg_cons.py seed=123 lr=0.00001  weight_epoch=100 ratio=0.9 save_dir=${save_dir}/symmetry_upper401lr"
-"python -O toySeg_cons.py seed=123 lr=0.0001   weight_epoch=100 ratio=0.9 save_dir=${save_dir}/symmetry_upper301lr"
+"python -O toySeg_cons.py seed=123 lr=0.0001 weight_epoch=100 ratio=0.9 save_dir=${save_dir}/symmetry_upper301lr"
+"python -O toySeg_cons.py seed=123 lr=0.0005 weight_epoch=100 ratio=0.9 save_dir=${save_dir}/symmetry_upper305lr"
+"python -O toySeg_cons.py seed=123 lr=0.001 weight_epoch=100 ratio=0.9 save_dir=${save_dir}/symmetry_upper201lr"
+"python -O toySeg_cons.py seed=123 lr=0.005 weight_epoch=100 ratio=0.9 save_dir=${save_dir}/symmetry_upper205lr"
 
 #lower_baseline
 #"python -O toySeg_cons.py seed=123 lr=0.00001 weight_epoch=100 ratio=0.1 save_dir=${save_dir}/symmetry_lower_10"
