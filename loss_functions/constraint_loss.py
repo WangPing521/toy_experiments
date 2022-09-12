@@ -6,6 +6,8 @@ from torch import Tensor
 import cv2
 import numpy as np
 
+from tool.independent_functions import dscintersaction, average_list, dscunion, class2one_hot
+
 device = 'cuda'
 def local_cons_binary_convex(sample_list, scale):
     kernel = torch.ones(1, 1, 3, 3)
@@ -108,7 +110,7 @@ def symetry_reward(sample_list, reward_type='hard'): # len(sample_list) = 4
             right_fgY = fg_Y[fg_right_index]
 
 
-            center_line = [center_position-20, center_position-15, center_position-10, center_position, center_position+10, center_position+15, center_position+20]
+            center_line = [center_position-10, center_position-5, center_position-3, center_position, center_position+3, center_position+5, center_position+10]
             tmp = 65536
             all_shape = torch.zeros_like(samples_img[i].squeeze(0))
             symmetry_error = torch.zeros_like(samples_img[i].squeeze(0))
@@ -146,6 +148,64 @@ def symetry_reward(sample_list, reward_type='hard'): # len(sample_list) = 4
         symmetry_errors_list.append(symmetry_errors)
     return all_shapes_list, symmetry_errors_list
 
+def symmetry_error(pred, label):
+    assert pred.shape == label.shape
+    batch_num = pred.shape[0]
+    fg_contour = ContourEstimator(pred)
+    contour_index = torch.where(fg_contour == 1)
+    fg_index = torch.where(pred.squeeze(1) == 1)
+    error_list, dsc_list= [], []
+    for i in range(batch_num):
+       reward_tmp_map = torch.zeros_like(pred[i].squeeze(0))
+       sample_contouridx = torch.where(contour_index[0]==i)
+       sample_fgidx = torch.where(fg_index[0]==i)
 
+       X = contour_index[1][sample_contouridx]
+       Y = contour_index[2][sample_contouridx]
+       min_index, max_index = min(Y), max(Y)
+       center_position = torch.floor(0.5 * (min_index + max_index)) # center
+
+       fg_X = fg_index[1][sample_fgidx]
+       fg_Y = fg_index[2][sample_fgidx]
+
+       # symmetry
+       fg_left_index = torch.where(fg_Y<center_position)
+       fg_right_index = torch.where(fg_Y>center_position)
+
+       left_fgX = fg_X[fg_left_index]
+       left_fgY = fg_Y[fg_left_index]
+       right_fgX = fg_X[fg_right_index]
+       right_fgY = fg_Y[fg_right_index]
+
+       for x,y in zip(left_fgX, left_fgY):
+           yy = int(2 * center_position - y)
+           yy = min(yy, 255)
+           reward_tmp_map[x][yy] = 1
+
+       for x,y in zip(right_fgX, right_fgY):
+           yy = int(2 * center_position - y)
+           yy = max(yy, 0)
+           reward_tmp_map[x][yy] = 1
+
+       all_shape = reward_tmp_map + pred[i]
+
+       all_shape = torch.where(all_shape>0, torch.Tensor([1]).to(device), all_shape)
+       symmetry_error = all_shape - pred[i]
+       error = symmetry_error.sum() / all_shape.sum()
+       error_list.append(error)
+
+       onehot_pred = class2one_hot(pred.squeeze(1).cpu(), C=2).to(device).to(device)
+       onehot_target = class2one_hot(label.squeeze(1).cpu(), C=2).to(device).to(device)
+
+       interaction, union = (
+           dscintersaction(onehot_pred, onehot_target),
+           dscunion(onehot_pred, onehot_target),
+       )
+       dice = (2 * interaction.sum(0) + 1e-6) / (union.sum(0) + 1e-6)
+       dsc_list.append(dice)
+    symmetry_error = average_list(error_list)
+    dice = average_list(dsc_list)
+
+    return dice, symmetry_error
 
 

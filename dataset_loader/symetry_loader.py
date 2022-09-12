@@ -2,6 +2,7 @@ import os
 from torch.utils.data import Dataset
 from torchvision import transforms
 from PIL import Image
+import torch
 
 trans = transforms.ToTensor()
 class DataloaderIter:
@@ -62,7 +63,7 @@ class SymetryData(Dataset):
             image = trans(image)
             label = trans(label)
             filename = self.unlab_container[idx]
-
+        label = torch.where(label>0, torch.Tensor([1]), label)
         if self.transform:
             image = self.transform(image)
         if self.target_transform:

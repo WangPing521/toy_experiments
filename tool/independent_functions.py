@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from skimage.io import imsave
-from typing import Union, List, Tuple
+from typing import Union, List, Tuple, Iterable, Set
 import matplotlib.pyplot as plt
 
 Tensor = Union[np.ndarray, torch.Tensor]
@@ -34,12 +34,79 @@ def simplex(t: Tensor, axis=1) -> bool:
 def average_list(input_list):
     return sum(input_list) / len(input_list)
 
+def uniq(a: Tensor) -> Set:
+    """
+    return unique element of Tensor
+    Use python Optimized mode to skip assert statement.
+    :rtype set
+    :param a: input tensor
+    :return: Set(a_npized)
+    """
+    return set([x.item() for x in a.unique()])
+
+def sset(a: Tensor, sub: Iterable) -> bool:
+    """
+    if a tensor is the subset of the other
+    :param a:
+    :param sub:
+    :return:
+    """
+    return uniq(a).issubset(sub)
+
+
+def one_hot(t: Tensor, axis=1) -> bool:
+    """
+    check if the Tensor is one hot.
+    The tensor shape can be float or int or others.
+    :param t:
+    :param axis: default = 1
+    :return: bool
+    """
+    return simplex(t, axis) and sset(t, [0, 1])
+
 def class2one_hot(seg, C, class_dim: int = 1):
-    seg = torch.Tensor(seg).type(torch.float)
-    # if len(seg.shape) == 3:
-    #     seg = seg.unsqueeze(dim=1)
-    res = torch.stack([seg == c for c in range(C)], dim=class_dim).type(torch.float)
+    """
+        make segmentaton mask to be onehot
+        """
+    assert sset(seg, list(range(C)))
+
+    b, *wh = seg.shape  # type:  Tuple[int, int, int]
+
+    res: Tensor = torch.stack([seg == c for c in range(C)], dim=class_dim).type(
+        torch.long
+    )
+    assert one_hot(res, axis=class_dim)
     return res
+
+def dscintersaction(pred: Tensor, target: Tensor):
+    """
+    return the interaction, supposing the two inputs are onehot-coded.
+    :param pred: onehot pred
+    :param target: onehot target
+    :return: tensor of intersaction over classes
+    """
+    assert pred.shape == target.shape
+    assert one_hot(pred) and one_hot(target)
+
+    B, C, *hw = pred.shape
+    intersect = (pred * target).sum(list(range(2, 2 + len(hw))))
+    assert intersect.shape == (B, C)
+    return intersect
+
+def dscunion(pred: Tensor, target: Tensor):
+    """
+    return the union, supposing the two inputs are onehot-coded.
+    :param pred: onehot pred
+    :param target: onehot target
+    :return: tensor of intersaction over classes
+    """
+    assert pred.shape == target.shape
+    assert one_hot(pred) and one_hot(target)
+
+    B, C, *hw = pred.shape
+    union = (pred + target).sum(list(range(2, 2 + len(hw))))
+    assert union.shape == (B, C)
+    return union
 
 def plot_joint_matrix(file_name, joint: Tensor):
     assert joint.dim() == 4, joint.shape

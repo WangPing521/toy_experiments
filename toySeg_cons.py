@@ -6,9 +6,12 @@ from architectures.enet import Enet
 from dataset_loader.symetry_loader import SymetryData, DataloaderIter
 from torch.utils.data import DataLoader
 from loss_functions.consAwareVat import consVATLoss
+from loss_functions.constraint_loss import symmetry_error
 from loss_functions.crossentropy import SimplexCrossEntropyLoss
 from tool.independent_functions import fix_all_seed, class2one_hot, simplex, average_list, plot_joint_matrix
 from tqdm import tqdm
+
+from tool.save_images import save_images
 
 config = ConfigManger("config/config_toyseg.yaml").config
 fix_all_seed(config['seed'])
@@ -35,7 +38,7 @@ val_set = SymetryData(img_dir='dataset/symetry_images/val')
 
 lab_dataloader = DataloaderIter(DataLoader(lab_set, batch_size=4, shuffle=True))
 unlab_dataloader = DataloaderIter(DataLoader(unlab_set, batch_size=4, shuffle=True))
-test_dataloader = DataLoader(val_set, batch_size=4, shuffle=True)
+test_dataloader = DataLoader(val_set, batch_size=1, shuffle=True)
 
 max_epoch = 100
 # # sup + cons (without vat)
@@ -114,12 +117,30 @@ if __name__ == '__main__':
         print(f"Training Epoch {cur_epoch}: suploss: {supl} lds: {lml} cons: {consl}")
 
 #       # val
-#         for val_data in enumerate(test_dataloader):
-#             val_img, val_target, val_filename = (
-#                 val_data[0][0],
-#                 val_data[0][1],
-#                 val_data[1]
-#             )
+        val_dsc, symmetry_errorlist = [], []
+        for batchid, val_data in enumerate(test_dataloader):
+            val_img, val_target, val_filename = (
+                val_data[0].to(device),
+                val_data[1].to(device),
+                val_data[2]
+            )
+            pred_val = net1(val_img).softmax(1)
+
+            dice, error= symmetry_error(pred_val.max(1)[1], val_target.squeeze(1))
+            val_dsc.append(dice)
+            symmetry_errorlist.append(error)
+        dsc = average_list(val_dsc)
+        symmetry_erroravg = average_list(symmetry_errorlist)
+        writer.add_scalar('val/dice0', dsc[0], cur_epoch)
+        writer.add_scalar('val/dice1', dsc[1], cur_epoch)
+        writer.add_scalar('val/error', symmetry_erroravg, cur_epoch)
+
+        if cur_epoch == 99:
+            save_images(pred_val.max(1)[1], names=val_filename, root=dir, mode='predictions', iter=cur_epoch)
+
+
+
+
 
 
 
