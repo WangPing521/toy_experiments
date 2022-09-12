@@ -189,7 +189,7 @@ def symmetry_error(pred, label):
 
        all_shape = reward_tmp_map + pred[i]
 
-       all_shape = torch.where(all_shape>torch.Tensor([0]).foat().to(device), torch.Tensor([1]).float().to(device), all_shape)
+       all_shape = torch.where(all_shape>torch.Tensor([0]).float().to(device), torch.Tensor([1]).float().to(device), all_shape)
        symmetry_error = all_shape - pred[i]
        error = symmetry_error.sum() / all_shape.sum()
        error_list.append(error)
