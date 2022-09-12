@@ -20,3 +20,15 @@ def save_images(segs: Tensor, names: Iterable[str], root: Union[str, Path], mode
 
             imsave(str(save_path), seg.cpu().numpy().astype(np.uint8))
 
+def save_toyseg(segs: Tensor, names: Iterable[str], root: Union[str, Path], mode: str) -> None:
+    (b, w, h) = segs.shape  # type: Tuple[int, int,int] # Since we have the class numbers, we do not need a C axis
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore', category=UserWarning)
+        for seg, name in zip(segs, names):
+
+            save_path = Path(root, mode, name).with_suffix(".png")
+
+            save_path.parent.mkdir(parents=True, exist_ok=True)
+
+            imsave(str(save_path), seg.cpu().numpy().astype(np.uint8))
+
