@@ -39,7 +39,7 @@ lab_dataloader = DataloaderIter(DataLoader(lab_set, batch_size=4, shuffle=True))
 unlab_dataloader = DataloaderIter(DataLoader(unlab_set, batch_size=4, shuffle=True))
 test_dataloader = DataLoader(val_set, batch_size=1, shuffle=True)
 
-max_epoch = 100
+max_epoch = 150
 if __name__ == '__main__':
 
     for cur_epoch in range(0, max_epoch):

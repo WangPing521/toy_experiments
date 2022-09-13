@@ -73,7 +73,7 @@ class Local_cons(nn.Module):
         prob_list, prob_list_trans = [], []
         # sample distribution
         for n in range(self._num):
-            sample_n = sample_container.sample()
+            sample_n = sample_container.sample().to(device)
             sample_list.append(sample_n)
 
             map_bg = torch.where(sample_n == 0, torch.Tensor([1]).to(device), torch.Tensor([0]).to(device))
